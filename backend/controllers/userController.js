@@ -3,12 +3,16 @@ import User from "../models/User.js";
 // Signup
 export const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, termsAccepted } = req.body;
+
+    if (!termsAccepted) {
+      return res.status(400).json({ message: "You must accept terms and conditions" });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "Email already registered" });
 
-    const user = await User.create({ name, email, password });
+    const user = await User.create({ name, email, password, termsAccepted });
     res.status(201).json(user);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -33,7 +37,10 @@ export const login = async (req, res) => {
 export const getProfile = async (req, res) => {
   const { id } = req.params;
   try {
-    const user = await User.findById(id).populate("rented_books");
+    const user = await User.findById(id)
+      .populate("rented_books")
+      .populate("liked_books");
+
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
   } catch (err) {
